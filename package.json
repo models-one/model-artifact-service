@@ -1,0 +1,28 @@
+{
+  "name": "model-artifact-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "build": "bun build src/index.ts src/render-worker.ts --target=bun --outdir=dist --packages=external"
+  },
+  "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
+    "css-tree": "^3.2.1",
+    "hono": "^4.13.18",
+    "saxes": "^6.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@types/bun": "^1.4.4",
+    "@types/css-tree": "^3.2.0",
+    "typescript": "^7.0.2"
+  }
+}
