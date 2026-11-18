@@ -147,6 +147,28 @@ DNS/连接/TLS/超时保留异常链和可用的底层错误码；JSON 解析错
 
 ## Docker
 
+发布镜像为 `ghcr.io/models-one/model-artifact-service:0.1.0`，支持 `linux/amd64` 和 `linux/arm64`。部署时优先使用固定版本；`latest` 指向最近发布版本。
+
+```sh
+docker pull ghcr.io/models-one/model-artifact-service:0.1.0
+```
+
+接入 new-api 时可复制 `config.render.example.json` 为 `config.json`，将 `host` 改为 `0.0.0.0`、`data_dir` 改为 `/app/data`，保留端口 `3001`。在 `.env` 中配置与 new-api 一致的 `PELICAN_SERVICE_TOKEN`，然后启动：
+
+```sh
+docker run -d --name model-artifact-service --restart unless-stopped \
+  -p 127.0.0.1:3001:3001 \
+  --env-file .env \
+  --mount type=bind,src="$PWD/config.json",dst=/app/config.json,readonly \
+  --mount type=volume,src=model-artifact-data,dst=/app/data \
+  --memory=512m --cpus=2 --cap-drop=ALL --security-opt=no-new-privileges \
+  ghcr.io/models-one/model-artifact-service:0.1.0
+```
+
+端口默认只绑定宿主机回环地址。new-api 若运行在其他容器，应将两者接入同一 Docker 网络，使用服务容器名访问；远程访问应经过 HTTPS 反向代理。
+
+源码构建方式：
+
 将配置中的 `host` 改为 `0.0.0.0`、`data_dir` 改为 `/app/data`。`.env` 内 `CONFIG_PATH` 改为 `/app/config.json`。
 
 ```sh
@@ -183,4 +205,5 @@ bun run build
 Docker Linux arm64 镜像已在 UID 1000、512 MiB / 2 CPU 限制下，通过本地模拟上游验证三种协议、实际 PNG 下载及容器重启持久化：3 条任务保存完整，上游调用总数仍为 3。独立子代理另完成 5 组 / 156 次断言与最新镜像复验，结论通过。测试只覆盖真实接口契约和已复现回归路径；未使用真实上游凭据或发起收费模型调用，实际提供方联调由部署时配置的连接完成。
 
 2026-11-17 集成版收尾：正式测试为 23 项 / 204 次断言，独立复验通过。最终镜像 `model-artifact-service:0.1.0` 在 Linux arm64、UID 1000、512 MiB / 2 CPU、禁用外部网络的容器中完成验证：三种协议生成真实 PNG；导入 21 份作品后保留 20 份；超过 7 天的导入被拒绝；重启后结果保留、幂等不重调上游、旧文件实际清理；不同客户端隔离和 Unicode 编码凭据脱敏通过。全部使用容器内模拟上游，没有调用收费模型。
+
 # model-artifact-service
