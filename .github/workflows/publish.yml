@@ -1,6 +1,12 @@
 name: Publish container
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to publish
+        required: true
+        type: string
   push:
     tags:
       - "v*.*.*"
@@ -9,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: publish-${{ github.ref }}
+  group: publish-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -22,6 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.tag || github.ref }}
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -29,11 +36,12 @@ jobs:
       - name: Check release version
         id: release
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           version="$(jq -r .version package.json)"
           test "$RELEASE_TAG" = "v$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Verify service
         run: |
           bun install --frozen-lockfile
@@ -60,5 +68,5 @@ jobs:
             ghcr.io/models-one/model-artifact-service:latest
           labels: |
             org.opencontainers.image.source=https://github.com/models-one/model-artifact-service
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ steps.release.outputs.revision }}
             org.opencontainers.image.version=${{ steps.release.outputs.version }}
